@@ -1,107 +1,233 @@
-//libraries used
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
+#include <ctype.h>
+#include <stdbool.h>
 
-// we are only working with max exponent 10
-// GLOBAL VARS
-#define MAX_TERMS 10
-
-/*
- * Structure in order  to represent a term
- * why? Using a struct allows us to sort out the coefficients and 
- * the exponents and we need to use typedef in order to avoid repetition
- * so we can type "Term name_of_variable" AND this allows us to implement
- * the most important part of this which is to make AN ARRAY OF TERMS
- *
- * Term[];
- *
- * this allows us to store the coefficient and the exponent of equation
- */
+bool FIRST_TERM_HAS_MINUS = false;
+int signs[10];
 
 typedef struct {
-    int coefficient;  // Coeficient of term 
-    int exponent;     // Exponent of term 
-} Term; //name of the needed struct
+		int coefficient;
+		int variable_exponent1;
+		int variable_exponent2;
+		char first_variable;
+		char second_variable;
+} Term;
 
+void print_the_matrix(Term* terms, int num_of_terms) {
+		bool FIRST_TERM_GONE = false;
+		printf("\n");
+		for (int i = 0; i < num_of_terms; i++) {
+				printf("\tCoefficient %d: %d\n", i, terms[i].coefficient);
+				printf("\texponent_var 1 index%d: %d\n", i, terms[i].variable_exponent1);
+				printf("\texponent_var 2 index%d: %d\n", i, terms[i].variable_exponent2);
+				printf("\tsign index %d: %d\n", i, signs[i] );
+		}
 
-// Function that splits the terms in the equation
-// type is void because we dont need to return to user anything
-void separateTerms(char* equation, Term* terms, int* numTerms) {
-		// spliting with our delimeter being every "+-" of the equation given
-		// i.e. every time it encounters a "+-" we SPLIT and therefero get all the individual terms 
-		// we are getting the term string as a string pointer
-    char* termStr = strtok(equation, "+-");
-		// while loop in order to achieve the following: 
-    while (termStr != NULL) {
-				// we declare two local variables 
-        int coefficient, exponent; //acts like a temp variable
-				// we need to use sscanf to READ the values and assign them to our local variables  
-				// why? because we have a string and scanf doesn work with strings
-				// this regex "%dx^%d" is the format 
-        sscanf(termStr, "%dx^%d", &coefficient, &exponent);
+		printf("\n");
+		int matrix[11][11] = {0};
 
-				/*
-				 * The read values are assigned to the corresponding members of the terms
-				 * structure at position *numTerms. The * operator is used to get the current
-				 * value of numTerms and access the correct position in the terms array.
-				 */
-        terms[*numTerms].coefficient = coefficient;
-        terms[*numTerms].exponent = exponent;
-        (*numTerms)++;
+		for (int i = 0, j = 0; i < num_of_terms; i++) {
+				int exponent_var1 = terms[i].variable_exponent1;
+				int exponent_var2 = terms[i].variable_exponent2;
+				int coefficient = terms[i].coefficient;
+				
+				if (FIRST_TERM_HAS_MINUS) {
+						puts("first term has minus");
+						j++;
+						int negative_coefficient = coefficient * -1;
+						matrix[exponent_var1][exponent_var2] = negative_coefficient;
+						FIRST_TERM_HAS_MINUS = false;
+						FIRST_TERM_GONE = true;
+				} else if (FIRST_TERM_GONE) {
+						if (signs[j] == 2) {
+								int negative_coefficient = coefficient * -1;
+								matrix[exponent_var1][exponent_var2] = negative_coefficient;
+						} else {
+								matrix[exponent_var1][exponent_var2] = coefficient;
+						}
+						j++;
+				} else {
+						puts("first term is positive");
+						matrix[exponent_var1][exponent_var2] = coefficient;
+						FIRST_TERM_GONE = true;
+				}
+		}
 
-				// we use strtok to get the next term
-				/*
-				 * By the way, if we want the function to keep
-				 * splitting our string; in the following calls
-				 * to it we must not pass the string (but NULL)
-				 * , and also the delimiters.
-				 */
-        termStr = strtok(NULL, "+-");
-    }
+		for (int i = 0; i < 11; i ++){
+				for (int j = 0; j < 11; j++) {
+						printf("%d  ", matrix[i][j]);
+				}
+				printf("\n");
+		}
 }
 
-// Function in order to print the matrix
-void printMatrix(Term* terms, int numTerms) {
-    int matrix[11][11] = {0};  // Matriz para almacenar los coeficientes
+void process_polynomial(char* raw_equation, Term* terms, int* num_of_terms) {
+		int count_raw_terms = 0;
+		char* raw_term = strtok(raw_equation, "+-"); 
 
-		// Filling matrix
-    for (int i = 0; i < numTerms; i++) {
-        int exponent = terms[i].exponent;
-        int coefficient = terms[i].coefficient;
-        matrix[exponent][0] = coefficient;
-    }
+		while (raw_term != NULL) {
+				char clean_term[50] = "";
+				int get_coefficient = 0;
+				count_raw_terms++;
 
-		//actually printing the matrix
-    for (int i = 0; i <= 10; i++) {
-        for (int j = 0; j <= 10; j++) {
-            printf("%d ", matrix[i][j]);
-        }
-        printf("\n");
-    }
+				if (isdigit(raw_term[0]) && (raw_term[1] == terms[0].first_variable ||
+										raw_term[1] == terms[0].second_variable) ) { //case 8x
+						get_coefficient += atoi(&raw_term[0]);
+						terms[*num_of_terms].coefficient = get_coefficient; 
+						terms[*num_of_terms].variable_exponent2 = 0;
+						for (int i = 1, j = 0; i < (strlen(raw_term)); i++, j++)
+								clean_term[j] = raw_term[i];
+
+						for (int i = 0; i < (strlen(clean_term)); i++) {
+								if (clean_term[i] == terms[0].first_variable) {
+										if (clean_term[i + 1] == '^') {
+												sscanf(clean_term +  i + 2, "%d", &terms[*num_of_terms].variable_exponent1);
+										} else {
+												terms[*num_of_terms].variable_exponent1 = 1;
+										}
+								} else if (clean_term[i] == terms[0].second_variable) {
+										if (clean_term[i + 1] == '^') {
+												sscanf(clean_term +  i + 2, "%d", &terms[*num_of_terms].variable_exponent2);
+										} else {
+												terms[*num_of_terms].variable_exponent2 = 1;
+										}
+								}
+						}
+
+								
+						printf("Clean term %d = %s\n", count_raw_terms, clean_term);
+
+				} else if (isalpha(raw_term[0])) { //case x
+						get_coefficient = 1;
+						terms[*num_of_terms].coefficient = get_coefficient; 
+						for (int i = 0; i < (strlen(raw_term)); i++) {
+								clean_term[i] = raw_term[i];
+						}
+
+						for (int i = 0; i < (strlen(clean_term)); i++) {
+								if (clean_term[i] == terms[0].first_variable) {
+										if (clean_term[i + 1] == '^') {
+												sscanf(clean_term +  i + 2, "%d", &terms[*num_of_terms].variable_exponent1);
+										} else {
+												terms[*num_of_terms].variable_exponent1 = 1;
+										}
+								} else if (clean_term[i] == terms[0].second_variable) {
+										if (clean_term[i + 1] == '^') {
+												sscanf(clean_term +  i + 2, "%d", &terms[*num_of_terms].variable_exponent2);
+										} else { 
+												terms[*num_of_terms].variable_exponent2 = 1;
+										}
+								}
+						}
+						printf("Clean term %d = %s\n", count_raw_terms, clean_term);
+
+				} else if (isdigit(raw_term[0]) && isdigit(raw_term[1]) && (raw_term[2] == terms[0].first_variable ||
+										raw_term[2] == terms[0].second_variable)) { //case 11x
+						sscanf(raw_term, "%d", &get_coefficient); 
+						terms[*num_of_terms].coefficient = get_coefficient;
+						for (int i = 2, j = 0; i < strlen(raw_term); i++, j++) {
+								clean_term[j] = raw_term[i];
+						}
+						for (int i = 0; i < (strlen(clean_term)); i++) {
+								if (clean_term[i] == terms[0].first_variable) {
+										if (clean_term[i + 1] == '^') {
+												sscanf(clean_term +  i + 2, "%d", &terms[*num_of_terms].variable_exponent1);
+										} else {
+												terms[*num_of_terms].variable_exponent1 = 1;
+										}
+								} else if (clean_term[i] == terms[0].second_variable) {
+										if (clean_term[i + 1] == '^') {
+												sscanf(clean_term +  i + 2, "%d", &terms[*num_of_terms].variable_exponent2);
+										} else {
+												terms[*num_of_terms].variable_exponent2 = 1;
+										}
+								}
+						}
+
+						printf("Clean term %d = %s\n", count_raw_terms, clean_term);
+				} else {
+						get_coefficient += atoi(&raw_term[0]);
+						terms[*num_of_terms].coefficient = get_coefficient; 
+						terms[*num_of_terms].variable_exponent1 = 0;
+						terms[*num_of_terms].variable_exponent2 = 0;
+						printf("Clean term %d = %s\n", count_raw_terms, raw_term);
+				}
+
+
+				printf(" Coefficient:%u\n",get_coefficient);
+				//terms index
+				(*num_of_terms)++;
+				//take next token
+				raw_term = strtok(NULL, "+-");
+		}
 }
 
-// main function where u just simply ask for inputs and print the arrays
+void process_input(char* input, Term* terms, int* num_of_terms) {
+		// need it local variables
+		int index_of_signs = 0;
+		bool keep_checking_for_variables = true;
+		char variable1 = '\0', variable2 = '\0';
+		//int input_length = strlen(input);
+
+		// Remove the newline character from input if present
+		/*
+		if (input_length > 0 && input[input_length -1] == '\n') {
+				input[input_length - 1] = '\0';
+		}
+		 */
+
+		int z = 0;
+		for(int i = 0; input[i] != '\0'; i++) {
+				if (input[0] == 45) {
+						FIRST_TERM_HAS_MINUS = true;
+				}
+				if (input[i] == 43) {
+				puts("hi?");
+						signs[index_of_signs] = 1;
+						index_of_signs++;
+				}
+				if (input[i] == 45) {
+				puts("hi?");
+						signs[index_of_signs] = 2;
+						index_of_signs++;
+				}
+				if (input[i] != '^' && isalpha(input[i]) && keep_checking_for_variables) {
+						if (variable1 == '\0') {
+								variable1 = input[i];
+								terms[0].first_variable = variable1;
+						} else if (variable2 == '\0') {
+								variable2 = input[i];
+								terms[0].second_variable = variable2;
+								//stop doing this to improve performance
+								keep_checking_for_variables = false;
+						} 
+				}
+
+				if (input[i] != ' ') {
+						input[z] = input[i];
+						z++;
+				}
+		}
+		input[z] = '\0';
+
+		printf("\nvar1:%c\t var2:%c\n", variable1, variable2);
+		process_polynomial(input, terms, num_of_terms);
+}
+
 int main() {
-    char equation[100];
-    printf("Please give equation with the following \"2x^3 + 3xy^2 - 5\"\n");
-		//using puts just for fun
-		//puts("If u are going to put a term with exponent one please use \"x^1\"");
-		// read string input
-    fgets(equation, sizeof(equation), stdin);
+		char input[200];
+		printf("input... :");
+		fgets(input, sizeof(input), stdin);
+		int num_of_terms = 0;
 
-		//this of course will add more depending on the input
-    int numTerms = 0;
-    Term terms[MAX_TERMS];
+		Term terms[9];
 
-		// calling functions
-    separateTerms(equation, terms, &numTerms);
-    printMatrix(terms, numTerms);
+		process_input(input,terms, &num_of_terms);
 
+		print_the_matrix(terms, num_of_terms);
     return 0;
 }
-
-
 
 

@@ -33,7 +33,7 @@ void print_the_matrix(Term* terms, int num_of_terms,int matrix[11][11]) {
 		// that the first term is not being evaluated anymore
 		bool FIRST_TERM_GONE = false;
 		printf("\n");
-		for (int i = 0; i < 1; i++) {
+		for (int i = 1; i < 1; i++) {
 		printf("Num: %d\n", terms[i].coefficient );
 		printf("var1: %c\n", terms[0].first_variable );
 		printf("var2: %c\n", terms[0].second_variable);
@@ -148,6 +148,7 @@ void process_polynomial(char* raw_equation, Term* terms, int* num_of_terms) {
 					// the varibale so coefficient = 1
 				} else if (isalpha(raw_term[0])) { //case e.g. xy
 						get_coefficient = 1;
+						terms[*num_of_terms].variable_exponent2 = 0;
 						terms[*num_of_terms].coefficient = get_coefficient; 
 						for (int i = 0; i < (strlen(raw_term)); i++) {
 								clean_term[i] = raw_term[i];
@@ -175,6 +176,7 @@ void process_polynomial(char* raw_equation, Term* terms, int* num_of_terms) {
 										raw_term[2] == terms[0].second_variable)) { //case e.g. 11x
 						sscanf(raw_term, "%d", &get_coefficient); 
 						terms[*num_of_terms].coefficient = get_coefficient;
+						terms[*num_of_terms].variable_exponent2 = 0;
 						// again, in the clean term we don't have the coefficient
 						for (int i = 2, j = 0; i < strlen(raw_term); i++, j++) {
 								clean_term[j] = raw_term[i];

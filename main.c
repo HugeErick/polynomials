@@ -33,6 +33,13 @@ void print_the_matrix(Term* terms, int num_of_terms,int matrix[11][11]) {
 		// that the first term is not being evaluated anymore
 		bool FIRST_TERM_GONE = false;
 		printf("\n");
+		for (int i = 0; i < 1; i++) {
+		printf("Num: %d\n", terms[i].coefficient );
+		printf("var1: %c\n", terms[0].first_variable );
+		printf("var2: %c\n", terms[0].second_variable);
+		printf("exp1: %d\n", terms[i].variable_exponent1);
+		printf("exp2: %d\n", terms[i].variable_exponent2);
+		}
 		printf("\n");
 		int temp_matrix[11][11] = {0};
 
@@ -92,6 +99,7 @@ void process_polynomial(char* raw_equation, Term* terms, int* num_of_terms) {
 		// raw term consist of the term separated by the signs,
 		// meaning that we only have the coefficient, the variables
 		// and the exponents
+		printf("\n %s \n", raw_equation);
 		char* raw_term = strtok(raw_equation, "+-"); 
 
 		while (raw_term != NULL) {
@@ -135,6 +143,7 @@ void process_polynomial(char* raw_equation, Term* terms, int* num_of_terms) {
 										}
 								}
 						}
+						printf("Clean term:%s\n", clean_term);
 					// case when we don't have an explicit coefficient but we have
 					// the varibale so coefficient = 1
 				} else if (isalpha(raw_term[0])) { //case e.g. xy
@@ -160,8 +169,7 @@ void process_polynomial(char* raw_equation, Term* terms, int* num_of_terms) {
 										}
 								}
 						}
-					
-
+						printf("Clean term:%s\n", clean_term);
 					// case when the coefficient has two digits and it has it's varibale(s)
 				} else if (isdigit(raw_term[0]) && isdigit(raw_term[1]) && (raw_term[2] == terms[0].first_variable ||
 										raw_term[2] == terms[0].second_variable)) { //case e.g. 11x
@@ -187,12 +195,15 @@ void process_polynomial(char* raw_equation, Term* terms, int* num_of_terms) {
 										}
 								}
 						}
+						printf("Clean term:%s\n", clean_term);
 					// else we just have a constant e.g. 200
 				} else {
 						get_coefficient += atoi(&raw_term[0]);
 						terms[*num_of_terms].coefficient = get_coefficient; 
 						terms[*num_of_terms].variable_exponent1 = 0;
 						terms[*num_of_terms].variable_exponent2 = 0;
+						printf("Clean term:%s\n", clean_term);
+					
 				}
 
 				//terms index
@@ -235,7 +246,7 @@ void process_input(char* input, Term* terms, int* num_of_terms) {
 						if (variable1 == '\0') {
 								variable1 = input[i];
 								terms[0].first_variable = variable1;
-						} else if (variable2 == '\0') {
+						} else if (variable2 == '\0' && input[i] != variable1) {
 								variable2 = input[i];
 								terms[0].second_variable = variable2;
 								//stop doing this to improve performance
@@ -251,6 +262,16 @@ void process_input(char* input, Term* terms, int* num_of_terms) {
 				}
 		}
 		input[z] = '\0';
+
+		if (variable2 == '\0') {
+			variable2 = 'y';
+			terms[0].second_variable = variable2;
+			// assigning to each term the exponent of the second variable 
+			// to 0 because else it will crash due to trash assignment
+			for (int i = 0; i < 9; i++) {
+				terms[i].variable_exponent2 = 0;
+			}
+		}
 
 		// now we can process the polynomial with the cleaned and altered input
 		process_polynomial(input, terms, num_of_terms);
